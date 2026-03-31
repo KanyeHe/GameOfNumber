@@ -10,16 +10,19 @@ def build_recommendation(
         return selected_unique
     if len(selected_unique) >= 7:
         return selected_unique
-    top_3 = stats.get("top_3", [])
-    bottom_3 = stats.get("bottom_3", [])
+    top_2 = stats.get("top_2", [])
+    bottom_2 = stats.get("bottom_2", [])
     middle_1 = stats.get("middle_1", [])
-    base = list(dict.fromkeys(top_3 + bottom_3 + middle_1))
+    random_2 = stats.get("random_2", [])
+    base = list(dict.fromkeys(top_2 + bottom_2 + middle_1 + random_2))
     base_set = set(base)
     missing = [number for number in selected_unique if number not in base_set]
     remove_needed = len(missing)
     if remove_needed == 0:
         return sorted(base)
-    removal_candidates = middle_1 + sorted(bottom_3) + sorted(top_3)
+    removal_candidates = (
+        middle_1 + sorted(bottom_2) + sorted(top_2) + sorted(random_2)
+    )
     base_list = list(base)
     for candidate in removal_candidates:
         if remove_needed == 0:
@@ -40,10 +43,11 @@ def build_recommendation(
 
 
 def ai_base_numbers(stats: Dict[str, List[int]]) -> List[int]:
-    top_3 = stats.get("top_3", [])
-    bottom_3 = stats.get("bottom_3", [])
+    top_2 = stats.get("top_2", [])
+    bottom_2 = stats.get("bottom_2", [])
     middle_1 = stats.get("middle_1", [])
-    return sorted(set(top_3 + bottom_3 + middle_1))
+    random_2 = stats.get("random_2", [])
+    return sorted(set(top_2 + bottom_2 + middle_1 + random_2))
 
 
 def generate_history_prediction(

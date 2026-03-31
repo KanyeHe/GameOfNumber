@@ -253,37 +253,72 @@ class LotteryStorage:
 
     def get_stats_for_latest(self, limit: int = 48) -> Dict[str, Dict[str, List[int]]]:
         records = self.get_latest_records(limit=limit)
+        return self._calculate_stats_for_records(records)
+
+    def get_stats_for_recent_days(
+        self, days: int = 7
+    ) -> Dict[str, Dict[str, List[int]]]:
+        records = self.get_latest_records(limit=500)
+        selected: List[DrawRecord] = []
+        seen_days: List[str] = []
+        for record in records:
+            day_key = record.date[:10]
+            if day_key not in seen_days:
+                seen_days.append(day_key)
+            if day_key in seen_days[:days]:
+                selected.append(record)
+            if len(seen_days) >= days and day_key not in seen_days[:days]:
+                break
+        return self._calculate_stats_for_records(selected)
+
+    def _calculate_stats_for_records(
+        self, records: List[DrawRecord]
+    ) -> Dict[str, Dict[str, List[int]]]:
+        seed = 0
+        if records:
+            date_key = records[0].date[:10]
+            seed = sum(ord(ch) for ch in date_key)
         positions = {
             "hundreds_place": [record.hundreds_place for record in records],
             "tens_place": [record.tens_place for record in records],
             "units_place": [record.units_place for record in records],
         }
         return {
-            position: self._calculate_stats(values) for position, values in positions.items()
+            position: self._calculate_stats(values, seed)
+            for position, values in positions.items()
         }
 
-    def _calculate_stats(self, values: List[int]) -> Dict[str, List[int]]:
+    def _calculate_stats(self, values: List[int], seed: int) -> Dict[str, List[int]]:
         counts = {digit: 0 for digit in range(10)}
         for value in values:
             if value in counts:
                 counts[value] += 1
         sorted_by_high = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
         sorted_by_low = sorted(counts.items(), key=lambda item: (item[1], item[0]))
-        top_3 = [digit for digit, _ in sorted_by_high[:3]]
-        bottom_3: List[int] = []
+        top_2 = [digit for digit, _ in sorted_by_high[:2]]
+        bottom_2: List[int] = []
         for digit, _ in sorted_by_low:
-            if digit not in top_3:
-                bottom_3.append(digit)
-            if len(bottom_3) == 3:
+            if digit not in top_2:
+                bottom_2.append(digit)
+            if len(bottom_2) == 2:
                 break
         remaining = [
             digit
             for digit, _ in sorted_by_low
-            if digit not in top_3 and digit not in bottom_3
+            if digit not in top_2 and digit not in bottom_2
         ]
         mid_index = len(remaining) // 2
-        middle_1 = [remaining[mid_index]] if remaining else [top_3[-1]]
-        return {"top_3": top_3, "bottom_3": bottom_3, "middle_1": middle_1}
+        middle_1 = [remaining[mid_index]] if remaining else [top_2[-1]]
+        base = top_2 + bottom_2 + middle_1
+        remaining_pool = [digit for digit in range(10) if digit not in base]
+        rng = __import__("random").Random(seed)
+        random_2 = sorted(rng.sample(remaining_pool, 2)) if remaining_pool else []
+        return {
+            "top_2": top_2,
+            "bottom_2": bottom_2,
+            "middle_1": middle_1,
+            "random_2": random_2,
+        }
 
     def get_prediction_records(self) -> List[PredictionRecord]:
         with self._connect() as conn:

@@ -160,7 +160,7 @@ class NumberPredictionWindow(QWidget):
             if self.storage.get_latest_code() is None:
                 QMessageBox.information(self, "提示", "暂无数据，请先同步开奖数据")
                 return
-            stats = self.storage.get_stats_for_latest(limit=48)
+            stats = self.storage.get_stats_for_recent_days(days=7)
             selected = self._selected_numbers()
             ai_enabled = self.ai_checkbox.isChecked()
             ai_active = ai_enabled and len(selected) < 7
@@ -275,6 +275,9 @@ class DataValidationWindow(QWidget):
         self.table = QTableWidget()
         self.unlock_button = QPushButton("解锁展示更多")
         self.unlock_button.clicked.connect(self._show_unlock_message)
+        self.error_filter_button = QPushButton("未中记录")
+        self.error_filter_button.clicked.connect(self._toggle_error_filter)
+        self.show_only_errors = False
         self.accuracy_label = QLabel("准确率：--")
         self._build_ui()
         self._load_records()
@@ -286,9 +289,14 @@ class DataValidationWindow(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(title)
-        self.accuracy_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.accuracy_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.accuracy_label.setStyleSheet("font-size: 14px; color: #444444;")
-        layout.addWidget(self.accuracy_label)
+        filter_row = QHBoxLayout()
+        filter_row.addStretch()
+        filter_row.addWidget(self.accuracy_label)
+        filter_row.addSpacing(12)
+        filter_row.addWidget(self.error_filter_button)
+        layout.addLayout(filter_row)
         self.table.setColumnCount(11)
         self.table.setHorizontalHeaderLabels(
             [
@@ -320,7 +328,14 @@ class DataValidationWindow(QWidget):
     def _load_records(self) -> None:
         records = self.storage.get_prediction_records()
         self._update_accuracy(records)
-        display_records = records[:50]
+        display_records = records
+        if self.show_only_errors:
+            display_records = [
+                record
+                for record in records
+                if self._is_record_incorrect(record)
+            ]
+        display_records = display_records[:50]
         self.table.setRowCount(len(display_records))
         for row_index, record in enumerate(display_records):
             self._render_record(row_index, record)
@@ -439,14 +454,7 @@ class DataValidationWindow(QWidget):
             return
         correct = 0
         for record in verified:
-            digits = self._parse_red_digits(record.red)
-            if not digits:
-                continue
-            if (
-                self._digit_in_numbers(digits[0], record.hundreds_dan)
-                and self._digit_in_numbers(digits[1], record.tens_dan)
-                and self._digit_in_numbers(digits[2], record.units_dan)
-            ):
+            if self._is_record_correct(record):
                 correct += 1
         accuracy = (correct / len(verified)) * 100
         self.accuracy_label.setText(f"准确率：{accuracy:.2f}%")
@@ -454,6 +462,28 @@ class DataValidationWindow(QWidget):
     def _digit_in_numbers(self, digit: int, numbers_text: str) -> bool:
         numbers = [num.strip() for num in numbers_text.split(",") if num.strip()]
         return str(digit) in numbers
+
+    def _is_record_correct(self, record: PredictionRecord) -> bool:
+        digits = self._parse_red_digits(record.red)
+        if not digits:
+            return False
+        return (
+            self._digit_in_numbers(digits[0], record.hundreds_dan)
+            and self._digit_in_numbers(digits[1], record.tens_dan)
+            and self._digit_in_numbers(digits[2], record.units_dan)
+        )
+
+    def _is_record_incorrect(self, record: PredictionRecord) -> bool:
+        if record.status != "已开奖" or not record.hundreds_dan:
+            return False
+        return not self._is_record_correct(record)
+
+    def _toggle_error_filter(self) -> None:
+        self.show_only_errors = not self.show_only_errors
+        self.error_filter_button.setText(
+            "显示全部" if self.show_only_errors else "未中记录"
+        )
+        self._load_records()
 
 
 def main() -> None:
