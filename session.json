@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "accessToken": "atk_a4eaf837a51a4e64b30c49518703bebc",
+    "refreshToken": "rtk_8fabcb1ed51942e68cfbfeabcc8fa62e"
+  },
+  "product": {
+    "accessToken": "atk_db3d1b9f05fd471bb5875dc777cb1289",
+    "refreshToken": "rtk_514d9b049d724464b9dd57dc701e7f47",
+    "sessionNo": "SES2043981019006242816"
+  },
+  "account": {
+    "accountId": 4,
+    "accountNo": "ACC202604131533182043714149673996288",
+    "email": "",
+    "nickname": "kanye",
+    "phone": "18408233911",
+    "status": 1,
+    "username": "kanye"
+  },
+  "deviceProfile": {
+    "deviceFingerprint": "8adefc4c596f03590cbb5db5240f3c15",
+    "installId": "8df10e4b9b601a178c453e3b",
+    "primaryMacHash": "11ad11225bf00cdb95a184d1d03743e7e13d76c583183aa84432c2b01056227e",
+    "macListHash": "11ad11225bf00cdb95a184d1d03743e7e13d76c583183aa84432c2b01056227e",
+    "deviceName": "MacBook-Pro.local",
+    "deviceType": "PC",
+    "clientType": "DESKTOP",
+    "osType": "Darwin",
+    "osVersion": "Darwin Kernel Version 25.2.0: Tue Nov 18 21:08:48 PST 2025; root:xnu-12377.61.12~1/RELEASE_ARM64_T8132",
+    "loginIp": "127.0.0.1"
+  }
+}
